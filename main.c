@@ -1,6 +1,7 @@
 #include "libuvc/libuvc.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv) {
     uint16_t temperature;
@@ -8,7 +9,7 @@ int main(int argc, char **argv) {
     uvc_device_t *dev;
     uvc_device_handle_t *devh;
     uvc_error_t res;
-    
+
     res = uvc_init(&ctx, NULL);
     if (res < 0) {
         uvc_perror(res, "uvc_init");
@@ -22,12 +23,13 @@ int main(int argc, char **argv) {
     if (res < 0) {
         uvc_perror(res, "uvc_find_device");
         return res;
-    }        
+    }
     puts("device found");
 
     res = uvc_open(dev, &devh);
     if (res < 0) {
         uvc_perror(res, "uvc_open");
+        return res;
     }
     puts("device opened");
 
@@ -51,10 +53,19 @@ int main(int argc, char **argv) {
     if (res < 0) { uvc_perror(res, "uvc_set_focus_auto"); }
     puts("disabled auto focus");
 
-    // set focus distance to minimum value
-    res = uvc_get_focus_abs(devh, &focus_abs, UVC_GET_MIN);
-    if (res < 0) { uvc_perror(res, "uvc_set_focus_abs get min"); }
+    // set focus distance to minimum or provided value
+    if (argc > 1) {
+        focus_abs = atoi(argv[1]);
+    } else {
+        res = uvc_get_focus_abs(devh, &focus_abs, UVC_GET_MIN);
+        if (res < 0) { uvc_perror(res, "uvc_set_focus_abs get min"); }
+    }
+
     res = uvc_set_focus_abs(devh, focus_abs);
     if (res < 0) { uvc_perror(res, "uvc_set_focus_abs"); }
-    puts("set abs focus to minimum value");
+    printf("set abs focus to %d\n", focus_abs);
+
+    // close
+    uvc_close(devh);
+    puts("device closed");
 }
